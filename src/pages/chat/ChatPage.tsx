@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { Send, Phone, Video, Info, Smile } from 'lucide-react';
 import { Avatar } from '../../components/ui/Avatar';
 import { Button } from '../../components/ui/Button';
@@ -15,12 +15,27 @@ import { MessageCircle } from 'lucide-react';
 export const ChatPage: React.FC = () => {
   const { userId } = useParams<{ userId: string }>();
   const { user: currentUser } = useAuth();
+  const navigate = useNavigate();
   const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState('');
   const [conversations, setConversations] = useState<any[]>([]);
   const messagesEndRef = useRef<null | HTMLDivElement>(null);
   
   const chatPartner = userId ? findUserById(userId) : null;
+  
+  const handleVideoCall = () => {
+    if (userId) {
+      navigate(`/video/${userId}`);
+    }
+  };
+  
+  const handleVoiceCall = () => {
+    // For now, voice call can also navigate to video call
+    // In a real app, this would be a separate voice-only call
+    if (userId) {
+      navigate(`/video/${userId}`);
+    }
+  };
   
   useEffect(() => {
     // Load conversations
@@ -97,6 +112,7 @@ export const ChatPage: React.FC = () => {
                   size="sm"
                   className="rounded-full p-2"
                   aria-label="Voice call"
+                  onClick={handleVoiceCall}
                 >
                   <Phone size={18} />
                 </Button>
@@ -106,6 +122,7 @@ export const ChatPage: React.FC = () => {
                   size="sm"
                   className="rounded-full p-2"
                   aria-label="Video call"
+                  onClick={handleVideoCall}
                 >
                   <Video size={18} />
                 </Button>

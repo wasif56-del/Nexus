@@ -1,26 +1,35 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Users, Bell, Calendar, TrendingUp, AlertCircle, PlusCircle } from 'lucide-react';
+import { Users, Bell, Calendar, TrendingUp, AlertCircle, PlusCircle, Clock, Wallet } from 'lucide-react';
 import { Button } from '../../components/ui/Button';
 import { Card, CardBody, CardHeader } from '../../components/ui/Card';
 import { Badge } from '../../components/ui/Badge';
 import { CollaborationRequestCard } from '../../components/collaboration/CollaborationRequestCard';
 import { InvestorCard } from '../../components/investor/InvestorCard';
 import { useAuth } from '../../context/AuthContext';
-import { CollaborationRequest } from '../../types';
+import { CollaborationRequest, Meeting } from '../../types';
 import { getRequestsForEntrepreneur } from '../../data/collaborationRequests';
 import { investors } from '../../data/users';
+import { getConfirmedMeetingsForUser } from '../../data/meetings';
+import { findUserById } from '../../data/users';
+import { getWalletByUserId } from '../../data/wallet';
+import { format } from 'date-fns';
 
 export const EntrepreneurDashboard: React.FC = () => {
   const { user } = useAuth();
   const [collaborationRequests, setCollaborationRequests] = useState<CollaborationRequest[]>([]);
   const [recommendedInvestors, setRecommendedInvestors] = useState(investors.slice(0, 3));
+  const [confirmedMeetings, setConfirmedMeetings] = useState<Meeting[]>([]);
   
   useEffect(() => {
     if (user) {
       // Load collaboration requests
       const requests = getRequestsForEntrepreneur(user.id);
       setCollaborationRequests(requests);
+      
+      // Load confirmed meetings
+      const meetings = getConfirmedMeetingsForUser(user.id);
+      setConfirmedMeetings(meetings);
     }
   }, [user]);
   
@@ -93,7 +102,9 @@ export const EntrepreneurDashboard: React.FC = () => {
               </div>
               <div>
                 <p className="text-sm font-medium text-accent-700">Upcoming Meetings</p>
-                <h3 className="text-xl font-semibold text-accent-900">2</h3>
+                <h3 className="text-xl font-semibold text-accent-900">
+                  {confirmedMeetings.filter(m => new Date(m.startTime) > new Date()).length}
+                </h3>
               </div>
             </div>
           </CardBody>
@@ -147,8 +158,48 @@ export const EntrepreneurDashboard: React.FC = () => {
           </Card>
         </div>
         
-        {/* Recommended investors */}
+        {/* Recommended investors and meetings */}
         <div className="space-y-4">
+          {/* Confirmed Meetings */}
+          {confirmedMeetings.length > 0 && (
+            <Card>
+              <CardHeader className="flex justify-between items-center">
+                <h2 className="text-lg font-medium text-gray-900">Confirmed Meetings</h2>
+                <Link to="/calendar" className="text-sm font-medium text-primary-600 hover:text-primary-500">
+                  View all
+                </Link>
+              </CardHeader>
+              
+              <CardBody className="space-y-3">
+                {confirmedMeetings
+                  .filter(m => new Date(m.startTime) > new Date())
+                  .slice(0, 3)
+                  .map(meeting => {
+                    const otherUserId = meeting.requesterId === user?.id ? meeting.requesteeId : meeting.requesterId;
+                    const otherUser = findUserById(otherUserId);
+                    const meetingDate = new Date(meeting.startTime);
+                    
+                    return (
+                      <div key={meeting.id} className="p-3 bg-gray-50 rounded-lg">
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1">
+                            <h4 className="text-sm font-medium text-gray-900">{meeting.title}</h4>
+                            {otherUser && (
+                              <p className="text-xs text-gray-600 mt-1">With {otherUser.name}</p>
+                            )}
+                            <div className="flex items-center mt-2 text-xs text-gray-500">
+                              <Clock size={12} className="mr-1" />
+                              <span>{format(meetingDate, 'MMM d, h:mm a')}</span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+              </CardBody>
+            </Card>
+          )}
+          
           <Card>
             <CardHeader className="flex justify-between items-center">
               <h2 className="text-lg font-medium text-gray-900">Recommended Investors</h2>

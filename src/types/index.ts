@@ -79,3 +79,83 @@ export interface AuthContextType {
   isAuthenticated: boolean;
   isLoading: boolean;
 }
+
+export interface AvailabilitySlot {
+  id: string;
+  userId: string;
+  startTime: string; // ISO datetime string
+  endTime: string; // ISO datetime string
+  dayOfWeek?: number; // 0-6 for recurring slots
+  isRecurring?: boolean;
+  createdAt: string;
+}
+
+export interface MeetingRequest {
+  id: string;
+  requesterId: string;
+  requesteeId: string;
+  slotId?: string; // If requesting a specific slot
+  startTime: string; // ISO datetime string
+  endTime: string; // ISO datetime string
+  title: string;
+  description: string;
+  status: 'pending' | 'accepted' | 'declined' | 'cancelled';
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface Meeting {
+  id: string;
+  requesterId: string;
+  requesteeId: string;
+  startTime: string; // ISO datetime string
+  endTime: string; // ISO datetime string
+  title: string;
+  description: string;
+  status: 'confirmed' | 'cancelled';
+  createdAt: string;
+}
+
+export interface Wallet {
+  id: string;
+  userId: string;
+  balance: number; // in cents or smallest currency unit
+  currency: string; // 'USD', 'EUR', etc.
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type TransactionType = 'deposit' | 'withdraw' | 'transfer' | 'funding' | 'payment';
+export type TransactionStatus = 'pending' | 'completed' | 'failed' | 'cancelled';
+
+export interface Transaction {
+  id: string;
+  walletId: string;
+  type: TransactionType;
+  amount: number; // in cents
+  currency: string;
+  senderId?: string; // For transfers and funding
+  receiverId?: string; // For transfers and funding
+  description: string;
+  status: TransactionStatus;
+  metadata?: {
+    dealId?: string;
+    paymentMethod?: string;
+    reference?: string;
+  };
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface FundingDeal {
+  id: string;
+  investorId: string;
+  entrepreneurId: string;
+  amount: number; // in cents
+  currency: string;
+  equity: number; // percentage
+  status: 'pending' | 'approved' | 'completed' | 'cancelled';
+  description: string;
+  createdAt: string;
+  updatedAt: string;
+}

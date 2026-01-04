@@ -1,20 +1,31 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Users, PieChart, Filter, Search, PlusCircle } from 'lucide-react';
+import { Users, PieChart, Filter, Search, PlusCircle, Clock, Calendar } from 'lucide-react';
 import { Button } from '../../components/ui/Button';
 import { Card, CardBody, CardHeader } from '../../components/ui/Card';
 import { Input } from '../../components/ui/Input';
 import { Badge } from '../../components/ui/Badge';
 import { EntrepreneurCard } from '../../components/entrepreneur/EntrepreneurCard';
 import { useAuth } from '../../context/AuthContext';
-import { Entrepreneur } from '../../types';
+import { Entrepreneur, Meeting } from '../../types';
 import { entrepreneurs } from '../../data/users';
 import { getRequestsFromInvestor } from '../../data/collaborationRequests';
+import { getConfirmedMeetingsForUser } from '../../data/meetings';
+import { findUserById } from '../../data/users';
+import { format } from 'date-fns';
 
 export const InvestorDashboard: React.FC = () => {
   const { user } = useAuth();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedIndustries, setSelectedIndustries] = useState<string[]>([]);
+  const [confirmedMeetings, setConfirmedMeetings] = useState<Meeting[]>([]);
+  
+  useEffect(() => {
+    if (user) {
+      const meetings = getConfirmedMeetingsForUser(user.id);
+      setConfirmedMeetings(meetings);
+    }
+  }, [user]);
   
   if (!user) return null;
   
@@ -147,40 +158,84 @@ export const InvestorDashboard: React.FC = () => {
         </Card>
       </div>
       
-      {/* Entrepreneurs grid */}
-      <div>
-        <Card>
-          <CardHeader>
-            <h2 className="text-lg font-medium text-gray-900">Featured Startups</h2>
-          </CardHeader>
-          
-          <CardBody>
-            {filteredEntrepreneurs.length > 0 ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {filteredEntrepreneurs.map(entrepreneur => (
-                  <EntrepreneurCard
-                    key={entrepreneur.id}
-                    entrepreneur={entrepreneur}
-                  />
-                ))}
-              </div>
-            ) : (
-              <div className="text-center py-8">
-                <p className="text-gray-600">No startups match your filters</p>
-                <Button 
-                  variant="outline" 
-                  className="mt-2"
-                  onClick={() => {
-                    setSearchQuery('');
-                    setSelectedIndustries([]);
-                  }}
-                >
-                  Clear filters
-                </Button>
-              </div>
-            )}
-          </CardBody>
-        </Card>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Entrepreneurs grid */}
+        <div className="lg:col-span-2">
+          <Card>
+            <CardHeader>
+              <h2 className="text-lg font-medium text-gray-900">Featured Startups</h2>
+            </CardHeader>
+            
+            <CardBody>
+              {filteredEntrepreneurs.length > 0 ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {filteredEntrepreneurs.map(entrepreneur => (
+                    <EntrepreneurCard
+                      key={entrepreneur.id}
+                      entrepreneur={entrepreneur}
+                    />
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-8">
+                  <p className="text-gray-600">No startups match your filters</p>
+                  <Button 
+                    variant="outline" 
+                    className="mt-2"
+                    onClick={() => {
+                      setSearchQuery('');
+                      setSelectedIndustries([]);
+                    }}
+                  >
+                    Clear filters
+                  </Button>
+                </div>
+              )}
+            </CardBody>
+          </Card>
+        </div>
+        
+        {/* Confirmed Meetings */}
+        {confirmedMeetings.length > 0 && (
+          <div>
+            <Card>
+              <CardHeader className="flex justify-between items-center">
+                <h2 className="text-lg font-medium text-gray-900">Confirmed Meetings</h2>
+                <Link to="/calendar" className="text-sm font-medium text-primary-600 hover:text-primary-500">
+                  View all
+                </Link>
+              </CardHeader>
+              
+              <CardBody className="space-y-3">
+                {confirmedMeetings
+                  .filter(m => new Date(m.startTime) > new Date())
+                  .slice(0, 5)
+                  .map(meeting => {
+                    const otherUserId = meeting.requesterId === user.id ? meeting.requesteeId : meeting.requesterId;
+                    const otherUser = findUserById(otherUserId);
+                    const meetingDate = new Date(meeting.startTime);
+                    
+                    return (
+                      <div key={meeting.id} className="p-3 bg-gray-50 rounded-lg">
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1">
+                            <h4 className="text-sm font-medium text-gray-900">{meeting.title}</h4>
+                            {otherUser && (
+                              <p className="text-xs text-gray-600 mt-1">With {otherUser.name}</p>
+                            )}
+                            <div className="flex items-center mt-2 text-xs text-gray-500">
+                              <Clock size={12} className="mr-1" />
+                              <span>{format(meetingDate, 'MMM d, h:mm a')}</span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+              </CardBody>
+            </Card>
+          </div>
+        )}
       </div>
     </div>
   );
